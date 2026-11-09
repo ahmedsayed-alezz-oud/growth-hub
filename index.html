@@ -43,7 +43,7 @@ iframe{flex:1;width:100%;border:0;background:#fff}
   </form>
 </div>
 <div id="app">
-  <div id="bar"><b>مركز قيادة النمو</b><span id="upd"></span><span class="sp"></span><span id="who"></span><button id="out" type="button">خروج</button></div>
+  <div id="bar"><b>مركز قيادة النمو</b><span id="upd"></span><span class="sp"></span><span id="who"></span><button id="upl" type="button" hidden>رفع نسخة جديدة</button><input id="file" type="file" accept=".html,text/html" hidden><button id="out" type="button">خروج</button></div>
   <iframe id="frame" title="مركز قيادة النمو"></iframe>
 </div>
 <script src="vendor/supabase.js"></script>
@@ -64,11 +64,16 @@ iframe{flex:1;width:100%;border:0;background:#fff}
       return;
     }
     var q = await sb.from('hub_pages').select('html,updated_at').eq('id','command-center').maybeSingle();
-    if(q.error||!q.data){msg('تعذر تحميل المحتوى. حاول مرة أخرى.');return}
+    if(q.error){msg('تعذر تحميل المحتوى. حاول مرة أخرى.');return}
     $('login').style.display='none';
     $('app').style.display='flex';
-    $('frame').srcdoc = q.data.html;
-    try{$('upd').textContent=' · آخر تحديث '+new Date(q.data.updated_at).toLocaleDateString('ar-SA')}catch(e){}
+    if(role==='manager') $('upl').hidden=false;
+    if(q.data){
+      $('frame').srcdoc = q.data.html;
+      try{$('upd').textContent=' · آخر تحديث '+new Date(q.data.updated_at).toLocaleDateString('ar-SA')}catch(e){}
+    } else {
+      $('frame').srcdoc = '<p dir="rtl" style="font-family:sans-serif;padding:24px">لا يوجد محتوى بعد. ارفع ملف مركز القيادة من زر «رفع نسخة جديدة».</p>';
+    }
     var s = await sb.auth.getUser();
     $('who').textContent = (s.data&&s.data.user&&s.data.user.email||'').split('@')[0];
   }
@@ -80,6 +85,17 @@ iframe{flex:1;width:100%;border:0;background:#fff}
     load();
   });
   $('out').addEventListener('click', async function(){await sb.auth.signOut();location.reload()});
+  $('upl').addEventListener('click', function(){ $('file').click(); });
+  $('file').addEventListener('change', async function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    if(f.size>5*1024*1024){ $('upd').textContent=' · الملف أكبر من 5 ميجا'; return; }
+    var html=await f.text();
+    if(html.indexOf('<html')<0){ $('upd').textContent=' · الملف ليس صفحة HTML'; return; }
+    $('upd').textContent=' · جارٍ الرفع...';
+    var r=await sb.from('hub_pages').upsert({id:'command-center', html:html, updated_at:new Date().toISOString()});
+    if(r.error){ $('upd').textContent=' · فشل الرفع: '+r.error.message; return; }
+    this.value=''; load();
+  });
   sb.auth.getSession().then(function(s){ if(s.data&&s.data.session) load(); });
 })();
 </script>
