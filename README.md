@@ -1,2 +1,8 @@
-# growth-hub
-Al Ezz Oud Growth Command Center (static shell; contnt loads from Supabase behind login)
+# مركز قيادة النمو — العز للعود | هيرش
+
+واجهة ثابتة فقط. المحتوى (الأرقام والتقارير) يُحمَّل من Supabase بعد تسجيل الدخول، ومحمي بـ Row Level Security.
+لا توجد أي بيانات عمل في هذا المستودع.
+
+الصلاحيات: manager · supervisor · viewer (المدير التنفيذي) — بنفس حسابات لوحة خدمة العملاء.
+
+تصميم وتطوير: أحمد سيد — مدير النمو

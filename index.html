@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>مركز قيادة النمو — العز للعود</title>
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#1e1a24;--muted:#6b6470;--gold:#b8862b;--line:#e3dccf;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#141216;--card:#1e1b21;--ink:#f1ece4;--muted:#a59ea8;--line:#35303a}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif}
+#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px}
+.box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:8px;padding:24px}
+h1{font-size:19px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+label{display:block;font-size:13px;margin:12px 0 5px}
+input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:15px}
+button{margin-top:16px;width:100%;padding:11px;border:0;border-radius:6px;background:var(--gold);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+#msg{min-height:20px;margin-top:10px;font-size:13px;color:var(--err)}
+.credit{margin-top:18px;font-size:11.5px;color:var(--muted);text-align:center}
+#app{display:none;height:100%;flex-direction:column}
+#bar{display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--card);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+#bar b{color:var(--ink)}
+#bar .sp{flex:1}
+#bar button{margin:0;width:auto;padding:5px 12px;font-size:12.5px;background:transparent;color:var(--ink);border:1px solid var(--line)}
+iframe{flex:1;width:100%;border:0;background:#fff}
+</style>
+</head>
+<body>
+<div id="login">
+  <form class="box" id="f" autocomplete="on">
+    <h1>مركز قيادة النمو</h1>
+    <p class="sub">العز للعود | هيرش — دخول بنفس حساب لوحة خدمة العملاء</p>
+    <label for="u">اسم المستخدم أو البريد</label>
+    <input id="u" name="username" autocomplete="username" required>
+    <label for="p">كلمة المرور</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button id="go" type="submit">دخول</button>
+    <div id="msg" role="alert"></div>
+    <div class="credit">تصميم وتطوير: أحمد سيد — مدير النمو</div>
+  </form>
+</div>
+<div id="app">
+  <div id="bar"><b>مركز قيادة النمو</b><span id="upd"></span><span class="sp"></span><span id="who"></span><button id="out" type="button">خروج</button></div>
+  <iframe id="frame" title="مركز قيادة النمو"></iframe>
+</div>
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  var sb = supabase.createClient(window.HUB_CONFIG.url, window.HUB_CONFIG.key);
+  var ALLOWED = ['manager','supervisor','viewer'];
+  var $ = function(id){return document.getElementById(id)};
+  function msg(t){$('msg').textContent=t||''}
+  function toEmail(u){u=(u||'').trim();return u.indexOf('@')>=0?u:(u.toLowerCase()+'@users.alezz-oud.com')}
+  async function load(){
+    var r = await sb.rpc('my_role');
+    var role = r && r.data;
+    if(ALLOWED.indexOf(role)<0){
+      await sb.auth.signOut();
+      msg(role==='pending'?'حسابك بانتظار موافقة المدير.':'ليس لديك صلاحية عرض مركز القيادة.');
+      return;
+    }
+    var q = await sb.from('hub_pages').select('html,updated_at').eq('id','command-center').maybeSingle();
+    if(q.error||!q.data){msg('تعذر تحميل المحتوى. حاول مرة أخرى.');return}
+    $('login').style.display='none';
+    $('app').style.display='flex';
+    $('frame').srcdoc = q.data.html;
+    try{$('upd').textContent=' · آخر تحديث '+new Date(q.data.updated_at).toLocaleDateString('ar-SA')}catch(e){}
+    var s = await sb.auth.getUser();
+    $('who').textContent = (s.data&&s.data.user&&s.data.user.email||'').split('@')[0];
+  }
+  $('f').addEventListener('submit', async function(e){
+    e.preventDefault(); msg(''); $('go').disabled=true;
+    var res = await sb.auth.signInWithPassword({email:toEmail($('u').value), password:$('p').value});
+    $('go').disabled=false;
+    if(res.error){msg('بيانات الدخول غير صحيحة.');return}
+    load();
+  });
+  $('out').addEventListener('click', async function(){await sb.auth.signOut();location.reload()});
+  sb.auth.getSession().then(function(s){ if(s.data&&s.data.session) load(); });
+})();
+</script>
+</body>
+</html>
