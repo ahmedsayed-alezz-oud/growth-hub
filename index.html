@@ -51,7 +51,7 @@ iframe{flex:1;width:100%;border:0;background:#fff}
 <script>
 (function(){
   var sb = supabase.createClient(window.HUB_CONFIG.url, window.HUB_CONFIG.key);
-  var ALLOWED = ['manager','supervisor','viewer'];
+  var ALLOWED = ['manager','viewer'];
   var $ = function(id){return document.getElementById(id)};
   function msg(t){$('msg').textContent=t||''}
   function toEmail(u){u=(u||'').trim();return u.indexOf('@')>=0?u:(u.toLowerCase()+'@users.alezz-oud.com')}
